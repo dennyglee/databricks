@@ -1,4 +1,4 @@
--- Databricks notebook source exported at Wed, 10 Feb 2016 19:31:43 UTC
+-- Databricks notebook source exported at Wed, 10 Feb 2016 19:32:23 UTC
 -- MAGIC %md # Mobile Sample Data (Sample)
 -- MAGIC This notebook contains various chart examples based on a sample mobile phone dataset.  
 -- MAGIC * Note, this dataset joins the mobile sample table and the country codes.
