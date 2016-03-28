@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Mon, 28 Mar 2016 15:32:09 UTC
+// Databricks notebook source exported at Mon, 28 Mar 2016 23:45:49 UTC
 // MAGIC %md ## ADAM Genomics Analysis: K-means clustering
 // MAGIC This notebook shows how to perform analysis against genomics datasets using the [Big Data Genomics](http://bdgenomics.org) ADAM Project ([0.19.0 Release](http://bdgenomics.org/blog/2016/02/25/adam-0-dot-19-dot-0-release/)).  We perform k-means clustering to predict which region the genome sequence is from and show the confusion matrix.
 // MAGIC 
@@ -33,9 +33,9 @@ import org.bdgenomics.adam.rdd.ADAMContext
 // COMMAND ----------
 
 // Set file locations
-val l_vcf = "/mnt/tardis6/adam/samples/6-sample.vcf"
+val l_vcf = "/databricks-datasets/samples/adam/samples/6-sample.vcf"
 val l_tmp = "/tmp/adam/6-sample.adam"
-val l_panel = "/mnt/tardis6/adam/panel/integrated_call_samples_v3.20130502.ALL.panel"
+val l_panel = "/databricks-datasets/samples/adam/panel/integrated_call_samples_v3.20130502.ALL.panel"
 
 // COMMAND ----------
 
@@ -67,11 +67,6 @@ gts.adamParquetSave(l_tmp)
 
 // Review the files in the l_tmp folder
 display(dbutils.fs.ls(l_tmp))
-
-// COMMAND ----------
-
-// Look at the first line of this datas
-gts.first()
 
 // COMMAND ----------
 
