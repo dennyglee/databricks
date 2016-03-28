@@ -1,0 +1,167 @@
+-- Databricks notebook source exported at Mon, 28 Mar 2016 15:36:16 UTC
+-- MAGIC %md # Data Exploration on Databricks
+
+-- COMMAND ----------
+
+-- MAGIC %md ### Parsing weblogs with regular expressions to create a table
+-- MAGIC 
+-- MAGIC * Original Format: %s %s %s [%s] \"%s %s HTTP/1.1\" %s %s
+-- MAGIC * Example Web Log Row 
+-- MAGIC  * 10.0.0.213 - 2185662 [14/Aug/2015:00:05:15 -0800] "GET /Hurricane+Ridge/rss.xml HTTP/1.1" 200 288
+
+-- COMMAND ----------
+
+-- MAGIC %md ## Create External Table
+-- MAGIC Create an external table against the weblog data where we define a regular expression format as part of the serializer/deserializer (SerDe) definition.  Instead of writing ETL logic to do this, our table definition handles this.
+
+-- COMMAND ----------
+
+DROP TABLE IF EXISTS weblog;
+CREATE EXTERNAL TABLE weblog (
+  ipaddress STRING,
+  clientidentd STRING,
+  userid STRING,
+  datetime STRING,
+  method STRING,
+  endpoint STRING,
+  protocol STRING,
+  responseCode INT,
+  contentSize BIGINT
+)
+ROW FORMAT
+  SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
+WITH SERDEPROPERTIES (
+  "input.regex" = '^(\\S+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \\"(\\S+) (\\S+) (\\S+)\\" (\\d{3}) (\\d+)'
+)
+LOCATION 
+  "/mnt/my-data/apache"
+
+-- COMMAND ----------
+
+-- MAGIC %md #### Note: You can run a CACHE TABLE statement to  help speed up the performance of the table you query regularly.
+
+-- COMMAND ----------
+
+CACHE TABLE weblog;
+
+-- COMMAND ----------
+
+-- MAGIC %md ## Query your weblogs using Spark SQL
+-- MAGIC Instead of parsing and extracting out the datetime, method, endpoint, and protocol columns; the external table has already done this for you.  Now you can treat your weblog data similar to how you would treat any other structured dataset and write Spark SQL against the table.
+
+-- COMMAND ----------
+
+select * from weblog limit 10;
+
+-- COMMAND ----------
+
+select count(1) from weblog;
+
+-- COMMAND ----------
+
+-- MAGIC %md ## Enhanced Spark SQL queries
+-- MAGIC At this point, we can quickly write SQL group by statements to understand which web page in the logs has the most number of events. But notice that there is a hierarchy of pages within the endpoint column.  We just want want to understand the top level hierarchy - which area such as the Olympics, Casacdes, or Rainier are more popular
+
+-- COMMAND ----------
+
+select endpoint, count(1) as Events
+  from weblog 
+ group by endpoint
+ order by Events desc 
+
+-- COMMAND ----------
+
+-- MAGIC %md #### To extract out the top level hierarchy within the same Spark SQL, we can write a nested SQL statement with regular expressions and split statements
+-- MAGIC * Click on the table and chart icon below the results to switch between table and bar graph.
+
+-- COMMAND ----------
+
+select TaggedEndPoints, NumHits
+  from (
+    select regexp_replace(split(endpoint, "/")[1], "index.html", "Home") as TaggedEndPoints, count(1) as NumHits
+      from weblog 
+     group by regexp_replace(split(endpoint, "/")[1], "index.html", "Home")
+  ) a
+ where TaggedEndPoints not in ('index.html', 'msgs', 'tags', 'Home', 'search')
+ order by NumHits desc
+
+-- COMMAND ----------
+
+-- MAGIC %md ## Making sense of web site response codes
+-- MAGIC Taking a step back, let's also look at how well the site is working by reviewing the response codes with a group by statement
+
+-- COMMAND ----------
+
+ select responsecode, count(1) as responses 
+   from weblog 
+  group by responsecode
+  
+
+-- COMMAND ----------
+
+-- MAGIC %md #### But it would be better to view this data using the response text instead of the just the codes.  So let's
+-- MAGIC * Create a response description table 
+-- MAGIC * Re-write the above SQL statement to join to this table
+
+-- COMMAND ----------
+
+-- Create Response Codes table
+DROP TABLE IF EXISTS response_codes;
+CREATE EXTERNAL TABLE response_codes (
+  ResponseCode INT,
+  ResponseDesc STRING
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED by '\t'
+LOCATION 
+  "/mnt/my-data/response";
+CACHE TABLE response_codes;
+
+-- COMMAND ----------
+
+-- Join to the response codes table
+-- Switch to pie chart using the chart button below the results
+select r.responsedesc, count(1) as responses
+  from weblog f
+    inner join response_codes r
+      on r.responsecode = f.responsecode
+ group by r.responsedesc
+ order by responses desc
+
+-- COMMAND ----------
+
+-- MAGIC %md ## Exploring your Data
+-- MAGIC Let's expand on our exploration by seeing where the users and sessions are coming from within our web logs.  To do this, we will create mapping table between the web logs IP address to ISO-3166-1 3-letter country codes.
+
+-- COMMAND ----------
+
+-- Create IP address to country mapping table
+DROP TABLE IF EXISTS map_weblog_geo;
+CREATE EXTERNAL TABLE map_weblog_geo (
+  ipaddress STRING,
+  CountryName STRING,
+  CountryCode2 STRING,
+  CountryCode3 STRING
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED by '\t'
+LOCATION 
+  "/mnt/my-data/map";
+CACHE TABLE map_weblog_geo;
+
+-- COMMAND ----------
+
+-- View a sample of the map_weblog_geo table
+select * from map_weblog_geo limit 10;
+
+-- COMMAND ----------
+
+-- Query the weblogs joining to the IP-to-country mapping table
+-- as well as running distinct count calculations
+select m.countrycode3, count(1) as Events, count(distinct UserID) as Users
+  from weblog f
+    inner join map_weblog_geo m 
+       on m.ipaddress = f.ipaddress
+ group by m.countrycode3
+ order by users desc
+
+-- COMMAND ----------
+
