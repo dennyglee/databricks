@@ -1,4 +1,4 @@
-# Databricks notebook source exported at Mon, 28 Mar 2016 15:37:53 UTC
+# Databricks notebook source exported at Mon, 28 Mar 2016 15:39:58 UTC
 # MAGIC %md # Databricks Data Import
 # MAGIC This is the companion notebook for the Databricks Data Import How-To Guide
 
@@ -14,8 +14,8 @@
 # COMMAND ----------
 
 import urllib
-ACCESS_KEY = "XHFKDFAEHFKASHFFDFAE"
-SECRET_KEY = "XDNn42u2-8a+rlkje597kd0937f3fcasdaqrjgya"
+ACCESS_KEY = "<ACCESS_KEY>"
+SECRET_KEY = "<SECRET_KEY>"
 ENCODED_SECRET_KEY = urllib.quote(SECRET_KEY, "")
 AWS_BUCKET_NAME = "my-data-for-databricks"
 MOUNT_NAME = "my-data"
