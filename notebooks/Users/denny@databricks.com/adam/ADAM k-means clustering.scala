@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Mon, 28 Mar 2016 23:45:49 UTC
+// Databricks notebook source exported at Tue, 29 Mar 2016 01:04:03 UTC
 // MAGIC %md ## ADAM Genomics Analysis: K-means clustering
 // MAGIC This notebook shows how to perform analysis against genomics datasets using the [Big Data Genomics](http://bdgenomics.org) ADAM Project ([0.19.0 Release](http://bdgenomics.org/blog/2016/02/25/adam-0-dot-19-dot-0-release/)).  We perform k-means clustering to predict which region the genome sequence is from and show the confusion matrix.
 // MAGIC 
@@ -53,7 +53,7 @@ dbutils.fs.head(l_vcf)
 
 // COMMAND ----------
 
-// MAGIC %md #### Load Sample VCF file and save ihnto ADAM Parquet format
+// MAGIC %md #### Load Sample VCF file and save into ADAM Parquet format
 
 // COMMAND ----------
 
@@ -162,6 +162,7 @@ gts.count()
 
 // MAGIC %md ### Review the Panel file
 // MAGIC This sample panel file obtained from `ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel` contains the sample, population code (pop), super population code (super_pop), and gender.  Note, the population code definitions can be found at http://www.1000genomes.org/cell-lines-and-dna-coriell.
+// MAGIC ![](http://www.1000genomes.org/sites/1000genomes.org/files/documents/1000-genomes-map_11-6-12-2_750.jpg)
 
 // COMMAND ----------
 
