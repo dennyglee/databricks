@@ -1,0 +1,19 @@
+# Get cluster list using curl
+curl -u user:pwd https://demo.cloud.databricks.com/api/2.0/clusters/list
+
+# Get list of Spark versions
+curl -u user:pwd https://demo.cloud.databricks.com/api/2.0/clusters/spark-versions
+
+# Create cluster 
+curl -u user:pwd -H "Content-Type: application/json" -X POST -d '{ "cluster_name": "flights", "spark_version": "1.6.x-ubuntu15.10", "spark_conf": { "spark.speculation": true }, "aws_attributes": { "availability": "SPOT", "zone_id": "us-west-2c" }, "num_workers": 2 }' https://demo.cloud.databricks.com/api/2.0/clusters/create
+
+
+Response: {"cluster_id":"0321-233513-urn580"}
+
+# Restart cluster
+curl -u user:pwd -H "Content-Type: application/json" -X POST -d '{"cluster_id":"0321-233513-urn580"}' https://demo.cloud.databricks.com/api/2.0/clusters/restart
+
+# Delete cluster
+curl -u user:pwd -H "Content-Type: application/json" -X POST -d '{"cluster_id":"0321-233513-urn580"}' https://demo.cloud.databricks.com/api/2.0/clusters/delete
+
+
