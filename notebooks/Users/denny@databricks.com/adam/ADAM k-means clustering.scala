@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Fri, 8 Apr 2016 22:22:14 UTC
+// Databricks notebook source exported at Fri, 8 Apr 2016 22:32:26 UTC
 // MAGIC %md ## ADAM Genomics Analysis: K-means clustering
 // MAGIC This notebook shows how to perform analysis against genomics datasets using the [Big Data Genomics](http://bdgenomics.org) ADAM Project ([0.19.0 Release](http://bdgenomics.org/blog/2016/02/25/adam-0-dot-19-dot-0-release/)).  We perform k-means clustering to predict which region the genome sequence is from and show the confusion matrix.
 // MAGIC 
@@ -20,7 +20,7 @@
 // MAGIC %md **WARNING:** 
 // MAGIC * When launching the cluster, ensure that the following configurations have been set:
 // MAGIC  * `spark.serializer org.apache.spark.serializer.KryoSerializer`
-// MAGIC  * `conf spark.kryo.registrator org.bdgenomics.adam.serialization.ADAMKryoRegistrator`
+// MAGIC  * `spark.kryo.registrator org.bdgenomics.adam.serialization.ADAMKryoRegistrator`
 // MAGIC * The library `org.bdgenomics.utils.misc.Hadoop (utils-misc_2.10-0.2.4.jar)` must be installed /attached to the cluster *prior* to 
 // MAGIC * Installing / attaching the `org.bdgenomics.adam.core (adam-core_2.10-0.19.0)` library. 
 // MAGIC * These need to be the Scala 2.10 and the cluster needs to be Spark 1.6.1 (Hadoop 2).
