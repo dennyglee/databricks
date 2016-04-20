@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Fri, 8 Apr 2016 22:32:26 UTC
+// Databricks notebook source exported at Wed, 20 Apr 2016 18:51:42 UTC
 // MAGIC %md ## ADAM Genomics Analysis: K-means clustering
 // MAGIC This notebook shows how to perform analysis against genomics datasets using the [Big Data Genomics](http://bdgenomics.org) ADAM Project ([0.19.0 Release](http://bdgenomics.org/blog/2016/02/25/adam-0-dot-19-dot-0-release/)).  We perform k-means clustering to predict which region the genome sequence is from and show the confusion matrix.
 // MAGIC 
@@ -51,6 +51,11 @@ dbutils.fs.rm(l_tmp, true)
 // COMMAND ----------
 
 // MAGIC %md #### Quick View of the sample VCF file
+
+// COMMAND ----------
+
+// Take a quick view of the sample VCF file
+//dbutils.fs.head(l_vcf)
 
 // COMMAND ----------
 
@@ -148,6 +153,20 @@ display(dbutils.fs.ls(l_tmp))
 // MAGIC 	"phaseQuality": null
 // MAGIC }
 // MAGIC ```
+
+// COMMAND ----------
+
+// MAGIC %md ### What happens when you read the ADAM Parquet files directly?
+
+// COMMAND ----------
+
+// What happens when we read the parquet files directly?
+//val tmp = sqlContext.read.parquet(l_tmp)
+//tmp.registerTempTable("temp")
+
+// COMMAND ----------
+
+// MAGIC %sql -- select * from temp limit 20;
 
 // COMMAND ----------
 
@@ -332,6 +351,16 @@ val predictionValues: RDD[(String, Int)] = dataPerSampleId.map(elt => {
     (elt._1, clusters.predict(elt._2)) 
 })
 predictionValues.toDF().registerTempTable("predictionValues")
+
+// COMMAND ----------
+
+// MAGIC %sql 
+// MAGIC select a.pop, b.`_2` as prediction, count(1) as count
+// MAGIC   from filteredpanel a
+// MAGIC     join predictionValues b
+// MAGIC       on b.`_1` = a.sample
+// MAGIC   where a.pop = "$pop"
+// MAGIC group by a.pop, b.`_2`
 
 // COMMAND ----------
 
