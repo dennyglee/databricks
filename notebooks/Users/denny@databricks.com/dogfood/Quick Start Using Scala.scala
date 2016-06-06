@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Mon, 28 Mar 2016 15:58:59 UTC
+// Databricks notebook source exported at Mon, 6 Jun 2016 05:24:01 UTC
 // MAGIC %md ## Quick Start Using Scala
 // MAGIC * Using a Databricks notebook to showcase RDD operations using Scala
 // MAGIC * Reference http://spark.apache.org/docs/latest/quick-start.html
@@ -6,13 +6,13 @@
 // COMMAND ----------
 
 // Take a look at the file system
-display(dbutils.fs.ls("/mnt/tardis6/docs"))
+display(dbutils.fs.ls("/databricks-datasets/samples/docs/"))
 
 // COMMAND ----------
 
 // Setup the textFile RDD to read the README.md file
 //   Note this is lazy 
-val textFile = sc.textFile("/mnt/tardis6/docs/README.md")
+val textFile = sc.textFile("/databricks-datasets/samples/docs/README.md")
 
 // COMMAND ----------
 
