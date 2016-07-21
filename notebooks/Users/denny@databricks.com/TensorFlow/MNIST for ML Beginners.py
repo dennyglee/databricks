@@ -1,4 +1,4 @@
-# Databricks notebook source exported at Thu, 16 Jun 2016 05:19:32 UTC
+# Databricks notebook source exported at Thu, 21 Jul 2016 17:30:32 UTC
 # MAGIC %md ## MNIST for ML Beginners
 # MAGIC This is the MNIST for ML Beginners using TensorFlow with Databricks and TensorFrames
 
