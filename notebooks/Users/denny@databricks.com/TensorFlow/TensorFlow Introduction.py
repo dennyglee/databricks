@@ -1,4 +1,4 @@
-# Databricks notebook source exported at Thu, 16 Jun 2016 05:19:55 UTC
+# Databricks notebook source exported at Thu, 21 Jul 2016 17:30:55 UTC
 # MAGIC %md ## TensorFlow Introduction
 # MAGIC This is an introduction to TensorFlow using TensorFlow with Databricks and TensorFrames
 
