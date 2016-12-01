@@ -25,10 +25,12 @@ Diving deeper into the stages, you will notice the following:
 
 **Job 1: Stage 1**
 The purpose of this first stage is to dive read the Parquet file as noted by the `FileScanRDD`.  There is a subsequent `WholeStageCodeGen` that we will dive into shortly.
+
 <img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="300px"/>
 
 **Job 1: Stage 2**
 The purpose of this second stage is to perform the shuffles as noted by the `ShuffledRowRDD`.  There is a subsequent `WholeStageCodeGen` that we will dive into shortly.
+
 <img src="https://github.com/dennyglee/databricks/blob/master/images/5-Job-0-Stage-2.png" height="300px"/>
 
 ### InternalRow
