@@ -34,6 +34,13 @@ The purpose of this second stage is to perform the shuffles as noted by the `Shu
 <img src="https://github.com/dennyglee/databricks/blob/master/images/5-Job-0-Stage-2.png" height="300px"/>
 
 ### InternalRow
+
+Note, the entire logic surrounding this 
+* Not reading any Parquet columns to get the count. 
+equested Parquet schema passed down to the VectorizedParquetRecordReader is simply an empty Parquet message. The count is computed using metadata stored in Parquet file footers.
+
+However, internally we still wrap the whole logic with an iterator that returns an InternalRow at a time. 
+	https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala
 To work with the Parquet File format, internally, Apache Spark wraps the logic with an iterator that returns an `InternalRow`; more information can be found in [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala)
 
 
