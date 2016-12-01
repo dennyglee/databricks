@@ -9,15 +9,15 @@ The count is computed using metadata stored in Parquet file footers.
 
 ### Jobs and Stages
 The jobs and stages behind the `spark.read.parquet(...).count()` can be seen in the diagram below.
-<img src="./images/1-parquet-count.png" height="200px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/1-parquet-count.png" height="200px"/>
 
 Basically, to perform the `count` against this parquet file, there are two jobs created - the first job is to read the file from the data source as noted in the diagram below.
 
-<img src="./images/2-Job-0.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="300px"/>
 
 The second job has two stages to perform the `count`.
 
-<img src="./images/3-Job-1.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="300px"/>
 
 
 
