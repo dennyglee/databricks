@@ -134,13 +134,30 @@ The other interaction path is via the `VectorizedParquetRecordReader` (and NonVe
 ```
 Diving into the details a bit, the `SpecificParquetRecordReaderBase.java` references the [Improve Parquet scan performance when using flat schemas commit](https://github.com/apache/spark/commit/cfdd8a1a304d66f2a424800ccc026874e6c5f1a8) as part of [[SPARK-11787] Speed up parquet reader for flat schemas](https://issues.apache.org/jira/browse/SPARK-11787). Note, this commit was included as part of the Spark 1.6 branch.
 
+Ultimately, if the query is a row count, Spark will reading the Parquet metadata to determine the count. If the predicates are fully satisfied by the min/max values, that should work as well though that is not fully verified. 
 
 
+#### 2. Generated Java Code interacts with the underlying data source
 
+As noted above:
+   *Java code is generated (i.e. `WholeStageCodeGen`) at planning time for the aggregate operator as well as the count() aggregate function.*
 
+Digging into this further, note the actions of **Job 1: Stage 1**
 
-If the query is a row count, Spark it pretty much works the way you described it (i.e. reading the metadata). If the predicates are fully satisfied by the min/max values, that should work as well though that is not as fully verified. It's not a bad idea to use those Parquet fields but as implied in the previous statement, the key issue is to ensure that the predicate filtering matches the metadata so you are doing an accurate count.
+<img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="300px"/>
 
+It performs a `FileScanRDD` and subsequently the Java byte code is generated via `WholeStageCodeGen`.  Review the code flow, you can see that the same DataSource ApI `org.apache.spark.sql.execution.datasources` in the previous bullet also contains the `FileScanRDD`.
 
+```
+|- DataSource.apply(L147)
+
+https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L147
+
+	|- package org.apache.spark.sql.execution.datasources	
+	https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSource.scala
+
+		|- FileScanRDD 			
+		https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/FileScanRDD.scala
+```
 
 
