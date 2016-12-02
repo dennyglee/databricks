@@ -54,6 +54,43 @@ To bridge the `Dataset.count()` with the Parquet reader, the path is:
 
 
 
+### Unpacking all of this
+Let's unpack this with links to the code on how this all works; to do this, we'll go backwards on the above flow.
+
+
+#### 1. Generated Java Code interacts with the underlying data source
+
+As noted above:
+
+   *The generated Java code interacts with the underlying data source [ParquetFileFormat](https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L18) with an [RecordReaderIterator](https://github.com/apache/spark/blob/b03b4adf6d8f4c6d92575c0947540cb474bf7de1/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/RecordReaderIterator.scala), which is used internally by the Spark data source API.*
+   
+When reviewing the **Job 0: Stage 0** (as noted above / diagram below), this first job is to read the file from the data source.
+
+<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="300px"/>
+
+The breakdown of the code flow can be seen below:
+
+
+```
+org.apache.spark.sql.DataFrameReader.load (DataFrameReader.scala:145)
+   https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L145
+
+	|- DataSource.apply(L147)
+		https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L147
+
+		|- package org.apache.spark.sql.execution.datasources
+			https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/DataSource.scala
+
+			|- package org.apache.spark.sql.execution.datasources.parquet [[ParquetFileFormat.scala#L18]]
+				https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L18
+
+    			|- class ParquetFileFormat [[ParquetFileFormat.scala#L51]]
+    				https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L51
+```
+The first part of the `spark.read.parquet(...).count()` query is `spark.read.parquet(...)`.  As noted in **Job 0: Stage 0**, its job is access the `ParquetFileFormat` data source when utilizing the `DataFrameReader`.
+
+
+
 
 
 
