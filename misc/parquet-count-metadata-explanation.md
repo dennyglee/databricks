@@ -87,10 +87,59 @@ org.apache.spark.sql.DataFrameReader.load (DataFrameReader.scala:145)
     			|- class ParquetFileFormat [[ParquetFileFormat.scala#L51]]
     				https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L51
 ```
-The first part of the `spark.read.parquet(...).count()` query is `spark.read.parquet(...)`.  As noted in **Job 0: Stage 0**, its job is access the `ParquetFileFormat` data source when utilizing the `DataFrameReader`.
+The first part of the `spark.read.parquet(...).count()` query is `spark.read.parquet(...)`.  As noted in **Job 0: Stage 0**, its job is access the `ParquetFileFormat` data source when utilizing the `DataFrameReader`.  This is all within the context of the *Data Source API* `org.apache.spark.sql.execution.datasources`.
+
+##### How does the Java code interact with the underlying data source?
+
+One is through the `RecordReaderIterator` that returns an `InternalRow` as noted above (and via the code flow below):
+```
+|- package org.apache.spark.sql.execution.datasources.parquet [[ParquetFileFormat.scala#L18]]
+	https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L18
+
+		|- class ParquetFileFormat [[ParquetFileFormat.scala#L51]]
+			https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L51
+
+			|- val iter = new RecordReaderIterator(parquetReader) [[ParquetFileFormat.scala#L399]]
+				https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L399
+
+				|- class RecordReaderIterator[T] [[RecordReaderIterator.scala#L32]]
+					https://github.com/apache/spark/blob/b03b4adf6d8f4c6d92575c0947540cb474bf7de1/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/RecordReaderIterator.scala#L32
+
+						|- import org.apache.hadoop.mapreduce.RecordReader [[RecordReaderIterator.scala#L22]]
+							https://github.com/apache/spark/blob/b03b4adf6d8f4c6d92575c0947540cb474bf7de1/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/RecordReaderIterator.scala#L22
+
+						|- import org.apache.spark.sql.catalyst.InternalRow [[RecordReaderIterator.scala#L24]]
+							https://github.com/apache/spark/blob/b03b4adf6d8f4c6d92575c0947540cb474bf7de1/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/RecordReaderIterator.scala#L24
+```
+
+The other interaction path is via the `VectorizedParquetRecordReader` (and NonVectorized) path; below is the code flow for the former.
+
+```
+|- package org.apache.spark.sql.execution.datasources.parquet [[ParquetFileFormat.scala#L18]]
+  https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L18
+
+    |- class ParquetFileFormat [[ParquetFileFormat.scala#L51]]
+      https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L51
+
+        |- val vectorizedReader = new VectorizedParquetRecordReader()
+          https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L376
+
+            |- VectorizedParquetRecordReader.java#48
+              https://github.com/apache/spark/blob/39e2bad6a866d27c3ca594d15e574a1da3ee84cc/sql/core/src/main/java/org/apache/spark/sql/execution/datasources/parquet/VectorizedParquetRecordReader.java#L48
+
+                  |- SpecificParquetRecordReaderBase.java#L151
+                    https://github.com/apache/spark/blob/v2.0.2/sql/core/src/main/java/org/apache/spark/sql/execution/datasources/parquet/SpecificParquetRecordReaderBase.java#L151
+
+                        |- totalRowCount
+```
+Diving into the details a bit, the `SpecificParquetRecordReaderBase.java` references the [Improve Parquet scan performance when using flat schemas commit](https://github.com/apache/spark/commit/cfdd8a1a304d66f2a424800ccc026874e6c5f1a8) as part of [[SPARK-11787] Speed up parquet reader for flat schemas](https://issues.apache.org/jira/browse/SPARK-11787). Note, this commit was included as part of the Spark 1.6 branch.
 
 
 
+
+
+
+If the query is a row count, Spark it pretty much works the way you described it (i.e. reading the metadata). If the predicates are fully satisfied by the min/max values, that should work as well though that is not as fully verified. It's not a bad idea to use those Parquet fields but as implied in the previous statement, the key issue is to ensure that the predicate filtering matches the metadata so you are doing an accurate count.
 
 
 
