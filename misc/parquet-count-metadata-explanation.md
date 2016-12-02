@@ -35,12 +35,13 @@ The purpose of this second stage is to perform the shuffles as noted by the `Shu
 
 ### InternalRow
 
-Note, the entire logic surrounding this 
-* Not reading any Parquet columns to get the count. 
-equested Parquet schema passed down to the VectorizedParquetRecordReader is simply an empty Parquet message. The count is computed using metadata stored in Parquet file footers.
+Internally, the entire logic surrounding this 
+* Not reading any Parquet columns to calculate the count
+* Passing of the Parquet schema to the VectorizedParquetRecordReader is actually an empty Parquet message
+* Computing the count using the metadata stored in the Parquet file footers.
 
-However, internally we still wrap the whole logic with an iterator that returns an InternalRow at a time. 
-	https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala
+involves the wrapping of the above within an iterator that returns an `InternalRow` per [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala).
+
 To work with the Parquet File format, internally, Apache Spark wraps the logic with an iterator that returns an `InternalRow`; more information can be found in [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala)
 
 
