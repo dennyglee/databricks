@@ -150,7 +150,6 @@ It performs a `FileScanRDD` and subsequently the Java byte code is generated via
 
 ```
 |- DataSource.apply(L147)
-
 https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L147
 
 	|- package org.apache.spark.sql.execution.datasources	
@@ -160,4 +159,8 @@ https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sq
 		https://github.com/apache/spark/blob/master/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/FileScanRDD.scala
 ```
 
+Note, the generation of Java byte code via `WholeStageCodeGen` is reference to the **Code Generation** step per the diagram of Spark's Catalyst Optimizer as part of the Spark SQL Engine. 
 
+![](https://github.com/dennyglee/databricks/blob/master/images/Catalyst-Optimizer.png)
+
+For more information on this section, a great overview is [Structuring Spark: DataFrames, Datasets, and Streaming by Michael Armbrust](http://www.slideshare.net/SparkSummit/structuring-spark-dataframes-datasets-and-streaming-by-michael-armbrust).  If you want to dive even deeper, check out the blog [Deep Dive into Spark SQL’s Catalyst Optimizer](https://databricks.com/blog/2015/04/13/deep-dive-into-spark-sqls-catalyst-optimizer.html) and [Apache Spark as a Compiler: Joining a Billion Rows per Second on a Laptop](https://databricks.com/blog/2016/05/23/apache-spark-as-a-compiler-joining-a-billion-rows-per-second-on-a-laptop.html).
