@@ -57,6 +57,7 @@ To bridge the `Dataset.count()` with the Parquet reader, the path is:
 ### Unpacking all of this
 Let's unpack this with links to the code on how this all works; to do this, we'll go backwards on the above flow.
 
+&nbsp;
 
 #### 1. Generated Java Code interacts with the underlying data source
 
@@ -136,6 +137,7 @@ Diving into the details a bit, the `SpecificParquetRecordReaderBase.java` refere
 
 Ultimately, if the query is a row count, Spark will reading the Parquet metadata to determine the count. If the predicates are fully satisfied by the min/max values, that should work as well though that is not fully verified. 
 
+&nbsp;
 
 #### 2. Generated Java Code interacts with the underlying data source
 
