@@ -9,15 +9,15 @@ The count is computed using metadata stored in Parquet file footers.
 
 ### Jobs
 The jobs and stages behind the `spark.read.parquet(...).count()` can be seen in the diagram below.
-<img src="https://github.com/dennyglee/databricks/blob/master/images/1-parquet-count.png" height="200px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/1-parquet-count.png" height="250px"/>
 
 Basically, to perform the `count` against this parquet file, there are two jobs created - the first job is to read the file from the data source as noted in the diagram below.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="400px"/>
 
 The second job has two stages to perform the `count`.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="400px"/>
 
 
 ### Stages
@@ -26,12 +26,12 @@ Diving deeper into the stages, you will notice the following:
 **Job 1: Stage 1**
 The purpose of this first stage is to dive read the Parquet file as noted by the `FileScanRDD`; there is a subsequent `WholeStageCodeGen` that we will dive into shortly.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="400px"/>
 
 **Job 1: Stage 2**
 The purpose of this second stage is to perform the shuffles as noted by the `ShuffledRowRDD`; there is a subsequent `WholeStageCodeGen` that we will dive into shortly.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/5-Job-0-Stage-2.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/5-Job-0-Stage-2.png" height="400px"/>
 
 ### InternalRow
 
@@ -67,7 +67,7 @@ As noted above:
    
 When reviewing the **Job 0: Stage 0** (as noted above / diagram below), this first job is to read the file from the data source.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/2-Job-0.png" height="400px"/>
 
 The breakdown of the code flow can be seen below:
 
@@ -146,7 +146,7 @@ As noted above:
 
 Digging into this further, note the actions of **Job 1: Stage 1**
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/4-Job-0-Stage-1.png" height="400px"/>
 
 It performs a `FileScanRDD` and subsequently the Java byte code is generated via `WholeStageCodeGen`.  Review the code flow, you can see that the same DataSource ApI `org.apache.spark.sql.execution.datasources` in the previous bullet also contains the `FileScanRDD`.
 
@@ -172,7 +172,7 @@ For more information on this section, a great overview is [Structuring Spark: Da
 #### 3. The Dataset.count() call is planned into an aggregate operator with a single count() aggregate function.
 Putting this all back together, the `Dataset.count()` is planned into an aggregate operator as per **Job 1** as noted below.
 
-<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="300px"/>
+<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="400px"/>
 
 Following `DataFrameReader` > `DataSource.apply` as per above, the same class also connects back to the `Dataset.ofRows` per the code flow below.
 
