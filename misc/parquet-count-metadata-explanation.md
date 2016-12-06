@@ -166,3 +166,26 @@ Note, the generation of Java byte code via `WholeStageCodeGen` is reference to t
 ![](https://github.com/dennyglee/databricks/blob/master/images/Catalyst-Optimizer.png)
 
 For more information on this section, a great overview is [Structuring Spark: DataFrames, Datasets, and Streaming by Michael Armbrust](http://www.slideshare.net/SparkSummit/structuring-spark-dataframes-datasets-and-streaming-by-michael-armbrust).  If you want to dive even deeper, check out the blog [Deep Dive into Spark SQL’s Catalyst Optimizer](https://databricks.com/blog/2015/04/13/deep-dive-into-spark-sqls-catalyst-optimizer.html) and [Apache Spark as a Compiler: Joining a Billion Rows per Second on a Laptop](https://databricks.com/blog/2016/05/23/apache-spark-as-a-compiler-joining-a-billion-rows-per-second-on-a-laptop.html).
+
+&nbsp;
+
+#### 3. The Dataset.count() call is planned into an aggregate operator with a single count() aggregate function.
+Putting this all back together, the `Dataset.count()` is planned into an aggregate operator as per **Job 1** as noted below.
+
+<img src="https://github.com/dennyglee/databricks/blob/master/images/3-Job-1.png" height="300px"/>
+
+Following `DataFrameReader` > `DataSource.apply` as per above, the same class also connects back to the `Dataset.ofRows` per the code flow below.
+
+```
+org.apache.spark.sql.DataFrameReader.load(DataFrameReader.scala:145)
+	https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L145
+
+	|- sparkSession.baseRelationToDataFrame (L146)
+		https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/DataFrameReader.scala#L146
+
+		|- Dataset.ofRows(self, LogicalRelation(baseRelation))
+			https://github.com/apache/spark/blob/689de920056ae20fe203c2b6faf5b1462e8ea73c/sql/core/src/main/scala/org/apache/spark/sql/SparkSession.scala#L386
+```
+
+
+
