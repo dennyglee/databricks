@@ -8,7 +8,7 @@ For a query like `spark.read.parquet(...).count()`, the Parquet columns are not 
 The count is computed using metadata stored in Parquet file footers.
 
 ### Jobs
-The jobs and stages behind the `spark.read.parquet(...).count()` can be seen in the diagram below.
+The jobs and stages behind the `spark.read.parquet(...).count()` can be seen in the Spark DAG (from the Spark UI) below.
 <img src="https://github.com/dennyglee/databricks/blob/master/images/1-parquet-count.png" height="250px"/>
 
 Basically, to perform the `count` against this parquet file, there are two jobs created - the first job is to read the file from the data source as noted in the diagram below.
@@ -42,7 +42,7 @@ Internally, the entire logic surrounding this
 
 involves the wrapping of the above within an iterator that returns an `InternalRow` per [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala).
 
-To work with the Parquet File format, internally, Apache Spark wraps the logic with an iterator that returns an `InternalRow`; more information can be found in [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala).  Ultimate, the `count()` aggregate function interacts with the underlying Parquet data source using this iterator. This is true for both vectorized and non-vectorized Parquet reader.
+To work with the Parquet File format, internally, Apache Spark wraps the logic with an iterator that returns an `InternalRow`; more information can be found in [InternalRow.scala](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/InternalRow.scala).  Ultimately, the `count()` aggregate function interacts with the underlying Parquet data source using this iterator. This is true for both vectorized and non-vectorized Parquet reader.
 
 
 ### Bridging the Dataset.count() with Parquet metadata
@@ -52,7 +52,7 @@ To bridge the `Dataset.count()` with the Parquet reader, the path is:
 * Java code is generated (i.e. `WholeStageCodeGen`) at planning time for the aggregate operator as well as the count() aggregate function.
 * The generated Java code interacts with the underlying data source [ParquetFileFormat](https://github.com/apache/spark/blob/2f7461f31331cfc37f6cfa3586b7bbefb3af5547/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/parquet/ParquetFileFormat.scala#L18) with an [RecordReaderIterator](https://github.com/apache/spark/blob/b03b4adf6d8f4c6d92575c0947540cb474bf7de1/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/RecordReaderIterator.scala), which is used internally by the Spark data source API.
 
-
+&nbsp;
 
 ### Unpacking all of this
 Let's unpack this with links to the code on how this all works; to do this, we'll go backwards on the above flow.
