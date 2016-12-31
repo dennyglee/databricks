@@ -1,4 +1,5 @@
-## Parquet Count Metadata Explanation
+## How Apache Spark performs a fast count using the parquet metadata
+### Parquet Count Metadata Explanation
 
 **Attribution:** Thanks to Cheng Lian and Nong Li for helping me to understand how this process works.
 
