@@ -21,9 +21,6 @@ ssc = StreamingContext(sc, 1)
 # Create checkpoint for local StreamingContext
 ssc.checkpoint("checkpoint")
 
-# Initial state RDD with (key, value) pairs
-initialStateRDD = sc.parallelize([(u'green', 1), (u'blue', 1)])
-
 # Define updateFunc: sum of the (key, value) pairs
 def updateFunc(new_values, last_sum):
  	return sum(new_values) + (last_sum or 0)
@@ -37,7 +34,7 @@ lines = ssc.socketTextStream("localhost", 9999)
 #	Line 3: Run `updateStateByKey` to running count
 running_counts = lines.flatMap(lambda line: line.split(" "))\
 					.map(lambda word: (word, 1))\
-                    .updateStateByKey(updateFunc, initialRDD=initialStateRDD)
+                    .updateStateByKey(updateFunc)
 
 # Print the first ten elements of each RDD generated in this stateful DStream to the console
 running_counts.pprint()
