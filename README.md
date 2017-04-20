@@ -31,19 +31,19 @@ The notebooks were created using Databricks in Python, Scala, SQL, and R; the va
 * [blog books](https://github.com/dennyglee/databricks/tree/master/notebooks/Users/denny%40databricks.com/blog%20books): Notebooks to support the Databricks blog ebooks.
 
 * [content](https://github.com/dennyglee/databricks/tree/master/notebooks/Users/denny%40databricks.com/content): Various notebooks including 
- * Data Exploration on Databricks
- * Salesforce Leads with Machine Learning, Spark SQL, and UDFs
- * Streaming Meetup RSVPs
+  * Data Exploration on Databricks
+  * Salesforce Leads with Machine Learning, Spark SQL, and UDFs
+  * Streaming Meetup RSVPs
 
 * [demo](https://github.com/dennyglee/databricks/tree/master/notebooks/Users/denny%40databricks.com/demo): Various notebooks including
- * OR Block Scheduling using Linear Regression
- * Mobile Sample SQL Notebook
- * Population vs. Price Linear Regression and SQL notebooks
- * Spark 1.6 Notebooks (describing the various enhancements for Spark 1.6)
+  * OR Block Scheduling using Linear Regression
+  * Mobile Sample SQL Notebook
+  * Population vs. Price Linear Regression and SQL notebooks
+  * Spark 1.6 Notebooks (describing the various enhancements for Spark 1.6)
 
 * [dogfood](https://github.com/dennyglee/databricks/tree/master/notebooks/Users/denny%40databricks.com/dogfood): Various notebooks including
- * AdTech Sample Notebook
- * Quick Start using Python | Scala
+  * AdTech Sample Notebook
+  * Quick Start using Python | Scala
 
 * [examples](https://github.com/dennyglee/databricks/tree/master/notebooks/Users/denny%40databricks.com/examples): Example notebooks in various stages of completion including `Iris dataset k-means vs. bisecting k-means`
 
