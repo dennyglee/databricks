@@ -16,6 +16,8 @@
 # MAGIC 
 # MAGIC 1. Install MLflow on your Databricks cluster and 
 # MAGIC 2. Set up a Remote MLflow Tracking Server
+# MAGIC 
+# MAGIC This notebook can also be found at [MLflow Quick Start Notebook](https://docs.databricks.com/_static/notebooks/mlflow/mlflow-quick-start-notebook.html) in [Databricks Documentation](https://docs.databricks.com/)
 
 # COMMAND ----------
 
