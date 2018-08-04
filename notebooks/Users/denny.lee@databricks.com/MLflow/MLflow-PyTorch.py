@@ -124,8 +124,24 @@ import tensorflow.summary
 from tensorflow.summary import scalar
 from tensorflow.summary import histogram
 
-Params = namedtuple('Params', ['batch_size', 'test_batch_size', 'epochs', 'lr', 'momentum', 'seed', 'cuda', 'log_interval'])
-args = Params(batch_size=64, test_batch_size=1000, epochs=10, lr=0.01, momentum=0.5, seed=1, cuda=False, log_interval=200)
+# Vars() doesn't work on this due to changes from Python 3.5.1 onwards per https://stackoverflow.com/questions/34166469/did-something-about-namedtuple-change-in-3-5-1
+#Params = namedtuple('Params', ['batch_size', 'test_batch_size', 'epochs', 'lr', 'momentum', 'seed', 'cuda', 'log_interval'])
+#args = Params(batch_size=64, test_batch_size=1000, epochs=10, lr=0.01, momentum=0.5, seed=1, cuda=False, log_interval=200)
+
+# Create Params dictionary
+class Params(object):
+	def __init__(self, batch_size, test_batch_size, epochs, lr, momentum, seed, cuda, log_interval):
+		self.batch_size = batch_size
+		self.test_batch_size = test_batch_size
+		self.epochs = epochs
+		self.lr = lr
+		self.momentum = momentum
+		self.seed = seed
+		self.cuda = cuda
+		self.log_interval = log_interval
+
+# Configure args
+args = Params(64, 1000, 10, 0.01, 0.5, 1, False, 200)
 
 cuda = not args.cuda and torch.cuda.is_available()
 
