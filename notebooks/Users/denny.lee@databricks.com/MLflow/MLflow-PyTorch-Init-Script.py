@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %md # MLflow-PyTorch init script
+# MAGIC %md # MLflow-PyTorch Init Script
 # MAGIC 
 # MAGIC Run this notebook to set up an init script that installs PyTorch on a GPU-enabled cluster:
 # MAGIC 
