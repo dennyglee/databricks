@@ -52,7 +52,7 @@
 # MAGIC     * Get the hostname of your EC2 instance
 # MAGIC     * Go to http://$TRACKING_SERVER$:5000; it should look similar to this [MLflow UI](https://databricks.com/wp-content/uploads/2018/06/mlflow-web-ui.png)
 # MAGIC     
-# MAGIC * Configure AWS credentials on your Databricks cluster to access the S3 `aritfact-root` you chose
+# MAGIC * Configure AWS credentials on your Databricks cluster to access the S3 `--default-artifact-root` you chose
 # MAGIC   * Either give your cluster an IAM role that can access the bucket, or follow [How to set an environment variable](https://forums.databricks.com/answers/11128/view.html) to set your AWS credentials which match the ones you used for `mlflow server`
 # MAGIC   * If the cluster was already running, restart it for those credentials to kick in
 
@@ -70,11 +70,6 @@
 # MAGIC   * Because the `install-pytorch.sh` script was installed in the `dbfs:/databricks/init/$clustername$/` folder, the restart of the cluster will execute the `install-pytorch.sh` and install `pytorch`
 # MAGIC   * You can validate this after the install by running `import torch` in a cell of an attached notebook
 # MAGIC * Re-attach this `MLflow-PyTorch` notebook and proceed to run the execution cells.
-
-# COMMAND ----------
-
-# Validate PyTorch was installed
-import torch
 
 # COMMAND ----------
 
@@ -123,6 +118,7 @@ import tensorflow as tf
 import tensorflow.summary
 from tensorflow.summary import scalar
 from tensorflow.summary import histogram
+from chardet.universaldetector import UniversalDetector
 
 # Vars() doesn't work on this due to changes from Python 3.5.1 onwards per https://stackoverflow.com/questions/34166469/did-something-about-namedtuple-change-in-3-5-1
 #Params = namedtuple('Params', ['batch_size', 'test_batch_size', 'epochs', 'lr', 'momentum', 'seed', 'cuda', 'log_interval'])
@@ -250,7 +246,7 @@ def log_scalar(name, value, step):
 # COMMAND ----------
 
 sess = tf.InteractiveSession()
-with mlflow.start_run():
+with mlflow.start_run():  
   # Log our parameters into mlflow
   for key, value in vars(args).items():
       mlflow.log_param(key, value)
@@ -260,6 +256,9 @@ with mlflow.start_run():
   writer = tf.summary.FileWriter(output_dir, graph=sess.graph) 
   
   for epoch in range(1, args.epochs + 1):
+      # print out active_run
+      print("Active Run ID: %s, Epoch: %s \n" % (mlflow.active_run(), epoch))
+      
       train(epoch)
       test(epoch)
 
@@ -274,11 +273,26 @@ mlflow.log_artifacts(output_dir, artifact_path="events")
 
 # COMMAND ----------
 
+# Finish run
+mlflow.end_run(status='FINISHED')
+
+# COMMAND ----------
+
 # MAGIC %md ## Start TensorBoard on local directory
 
 # COMMAND ----------
 
 dbutils.tensorboard.start(output_dir)
+
+# COMMAND ----------
+
+# MAGIC %md #### MLflow UI for the recently executed PyTorch MNIST Run
+# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-MLflow-UI.gif" width=750/>
+
+# COMMAND ----------
+
+# MAGIC %md #### Tensorboard for the recently executed PyTorch MNIST Run
+# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-Tensorboard.gif" width=750/>
 
 # COMMAND ----------
 
@@ -288,3 +302,10 @@ dbutils.tensorboard.start(output_dir)
 
 dbutils.tensorboard.stop()
 dbutils.tensorboard.start(os.path.join(mlflow.get_artifact_uri(), "events"))
+
+# COMMAND ----------
+
+dbutils.tensorboard.stop()
+
+# COMMAND ----------
+
