@@ -92,7 +92,7 @@ mlflow.set_tracking_uri(mlflow_tracking_URI)
 
 # COMMAND ----------
 
-# MAGIC %md # Trains an MNIST digit recognizer using PyTorch
+# MAGIC %md # Train an MNIST digit recognizer using PyTorch
 
 # COMMAND ----------
 
@@ -287,21 +287,20 @@ dbutils.tensorboard.start(output_dir)
 # COMMAND ----------
 
 # MAGIC %md #### MLflow UI for the recently executed PyTorch MNIST Run
-# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-MLflow-UI.gif" width=750/>
+# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-MLflow-UI.gif" width=1000/>
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
 # MAGIC %md #### Tensorboard for the recently executed PyTorch MNIST Run
-# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-Tensorboard.gif" width=750/>
+# MAGIC <img src="https://s3.us-east-2.amazonaws.com/databricks-dennylee/media/MLflow-PyTorch-Tensorboard.gif" width=1000/>
 
 # COMMAND ----------
 
-# MAGIC %md ## Stop TensorBoard and start TensorBoard on artifact in S3
-
-# COMMAND ----------
-
-dbutils.tensorboard.stop()
-dbutils.tensorboard.start(os.path.join(mlflow.get_artifact_uri(), "events"))
+# MAGIC %md ## Stop TensorBoard
 
 # COMMAND ----------
 
