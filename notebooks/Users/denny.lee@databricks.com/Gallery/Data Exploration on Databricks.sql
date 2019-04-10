@@ -5,13 +5,9 @@
 
 -- MAGIC %md ### Parsing weblogs with regular expressions to create a table
 -- MAGIC 
--- MAGIC * Original Format: %s %s %s [%s] \"%s %s HTTP/1.1\" %s %s
+-- MAGIC * Original Format: `%s %s %s [%s] \"%s %s HTTP/1.1\" %s %s`
 -- MAGIC * Example Web Log Row 
--- MAGIC  * 10.0.0.213 - 2185662 [14/Aug/2015:00:05:15 -0800] "GET /Hurricane+Ridge/rss.xml HTTP/1.1" 200 288
-
--- COMMAND ----------
-
--- MAGIC %fs ls /mnt/tardis6/samples/weblog/apache/
+-- MAGIC  * `10.0.0.213 - 2185662 [14/Aug/2015:00:05:15 -0800] "GET /Hurricane+Ridge/rss.xml HTTP/1.1" 200 288`
 
 -- COMMAND ----------
 
@@ -46,24 +42,14 @@ LOCATION
 
 -- COMMAND ----------
 
--- MAGIC %md #### Note: You can run a CACHE TABLE statement to  help speed up the performance of the table you query regularly.
-
--- COMMAND ----------
-
-CACHE TABLE weblog;
-
--- COMMAND ----------
-
 -- MAGIC %md ## Query your weblogs using Spark SQL
 -- MAGIC Instead of parsing and extracting out the datetime, method, endpoint, and protocol columns; the external table has already done this for you.  Now you can treat your weblog data similar to how you would treat any other structured dataset and write Spark SQL against the table.
+-- MAGIC 
+-- MAGIC Instead of reading the data as strings: `10.0.0.213 - 2185662 [14/Aug/2015:00:05:15 -0800] "GET /Hurricane+Ridge/rss.xml HTTP/1.1" 200 288`, you can review a table as noted below.
 
 -- COMMAND ----------
 
 select * from weblog limit 10;
-
--- COMMAND ----------
-
-select count(1) from weblog;
 
 -- COMMAND ----------
 
@@ -119,10 +105,6 @@ select TaggedEndPoints, NumHits
 
 -- COMMAND ----------
 
-select * from response_codes
-
--- COMMAND ----------
-
 -- Join to the response codes table
 -- Switch to pie chart using the chart button below the results
 select r.responsedesc, count(1) as responses
@@ -139,19 +121,10 @@ select r.responsedesc, count(1) as responses
 
 -- COMMAND ----------
 
-select ipaddress, count(1) from weblog group by ipaddress order by count(1) desc
-
--- COMMAND ----------
-
 -- MAGIC %python
 -- MAGIC # Create table that maps IP address to state
 -- MAGIC map2state = spark.read.csv('/mnt/tardis6/samples/weblog/map/map2state.csv', header='true', inferSchema='true')
 -- MAGIC map2state.createOrReplaceTempView("map2state")
-
--- COMMAND ----------
-
--- View a sample of the map2state table
-select * from map2state limit 10;
 
 -- COMMAND ----------
 
