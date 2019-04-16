@@ -3,9 +3,9 @@
 # MAGIC 
 # MAGIC This notebook showcases ACID transactions by running INSERT/UPDATE statements (in this notebook) while you can view the same table using the *View* notebook in a consistent manner.  
 # MAGIC 
+# MAGIC <img src="/dbfs/mnt/databricks-dennylee/logo/delta-lake-logo-02-cmyk.png" width=200/>
 # MAGIC 
 # MAGIC ### [TODO]
-# MAGIC * Update to include new Delta Lakes logo
 # MAGIC * Point to new Delta Lakes documentation (per below)
 # MAGIC 
 # MAGIC 
@@ -31,10 +31,8 @@
 
 # COMMAND ----------
 
-# MAGIC %md ## In-place Import
-# MAGIC With Delta Lakes, you can perform and in-place import of your Parquet data; i.e. Enables converting existing Parquet tables into Delta tables, without re-writing all the data. 
-# MAGIC 
-# MAGIC **TODO**: Need to re-write above so we're actually doing a in-place import
+# MAGIC %md ## Easily Convert Parquet to Delta Lake format
+# MAGIC With Delta Lakes, you can easily transform your Parquet data into Delta Lake format. 
 
 # COMMAND ----------
 
