@@ -390,6 +390,10 @@ shap_values = e.shap_values(x_test[1:10])
 # MAGIC * For the 'four' image the lack of a connection on top makes it a four instead of a nine (row 4, col 6)
 # MAGIC 
 # MAGIC ![shap 4](https://pages.databricks.com/rs/094-YMS-629/images/shap-4.png)
+# MAGIC 
+# MAGIC This is more apparent when looking at the "4" on row 6, col 11 where the blue pixels decrease the model output results
+# MAGIC 
+# MAGIC ![shap 4.2](https://pages.databricks.com/rs/094-YMS-629/images/shap-4-2.png)
 
 # COMMAND ----------
 
