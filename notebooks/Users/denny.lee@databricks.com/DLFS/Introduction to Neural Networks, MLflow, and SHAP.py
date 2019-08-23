@@ -9,6 +9,10 @@
 
 # COMMAND ----------
 
+import shap
+
+# COMMAND ----------
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -26,10 +30,13 @@ from keras import backend as K
 import tensorflow as tf
 tf.set_random_seed(42) # For reproducibility
 
+# Print out Keras version
+print(keras.__version__)
+
 # COMMAND ----------
 
 # Configure MLflow Experiment
-mlflow_experiment_id = 2102416
+#mlflow_experiment_id = 2102416
 
 # Including MLflow
 import mlflow
@@ -46,7 +53,7 @@ print("MLflow Version: %s" % mlflow.__version__)
 # MAGIC 
 # MAGIC The purpose of this notebook is to use Keras (with TensorFlow backend) to **automate the identification of handwritten digits** from the  [MNIST Database of Handwritten Digits](http://yann.lecun.com/exdb/mnist/) database. The source of these handwritten digits is from the National Institute of Standards and Technology (NIST) Special Database 3 (Census Bureau employees) and Special Database 1 (high-school students).
 # MAGIC 
-# MAGIC <img src="https://www.tensorflow.org/versions/r0.9/images/MNIST.png" width="300"/>
+# MAGIC <img src="https://github.com/dennyglee/databricks/blob/master/images/mnist.png?raw=true" width="300"/>
 
 # COMMAND ----------
 
@@ -226,7 +233,8 @@ def runCNN(activation, verbose):
   model.add(Dense(num_classes, activation='softmax'))
 
   # Log MLflow
-  with mlflow.start_run(experiment_id = mlflow_experiment_id) as run:
+  #with mlflow.start_run(experiment_id = mlflow_experiment_id) as run:
+  with mlflow.start_run() as run:
   
     # Loss function (crossentropy) and Optimizer (Adadelta)
     model.compile(loss=keras.losses.categorical_crossentropy,
@@ -312,7 +320,8 @@ model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
 
 # Log MLflow
-with mlflow.start_run(experiment_id = mlflow_experiment_id) as run:
+#with mlflow.start_run(experiment_id = mlflow_experiment_id) as run:
+with mlflow.start_run() as run:
 
   # Loss function (crossentropy) and Optimizer (Adadelta)
   model.compile(loss=keras.losses.categorical_crossentropy,
@@ -356,7 +365,7 @@ print('Test accuracy:', score[1])
 
 # COMMAND ----------
 
-import shap
+#import shap
 import numpy as np
 
 # select a set of background examples to take an expectation over
@@ -367,6 +376,12 @@ e = shap.DeepExplainer(model, background)
 # ...or pass tensors directly
 # e = shap.DeepExplainer((model.layers[0].input, model.layers[-1].output), background)
 shap_values = e.shap_values(x_test[1:10])
+
+# COMMAND ----------
+
+# plot the feature attributions
+shap_plot = shap.image_plot(shap_values, -x_test[1:5])
+display(shap_plot)
 
 # COMMAND ----------
 
@@ -406,6 +421,3 @@ display(shap_plot)
 # plot the feature attributions
 shap_plot = shap.image_plot(shap_values, -x_test[11:20])
 display(shap_plot)
-
-# COMMAND ----------
-
