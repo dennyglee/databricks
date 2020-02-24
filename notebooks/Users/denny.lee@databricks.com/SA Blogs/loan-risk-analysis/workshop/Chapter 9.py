@@ -1,8 +1,7 @@
 # Databricks notebook source
-# MAGIC %md # Chapter 9: Make Apache Spark Better with Delta Lake
-# MAGIC ### Python Tutorial
+# MAGIC %md # Chapter 9: Building Reliable Data Lakes with Delta Lake and Apache Spark™
 # MAGIC 
-# MAGIC An open-source storage format that brings ACID transactions to Apache Spark™ and big data workloads.
+# MAGIC Delta Lake: An open-source storage format that brings ACID transactions to Apache Spark™ and big data workloads.
 # MAGIC 
 # MAGIC <img src="https://docs.delta.io/latest/_static/delta-lake-logo.png" width=300/>
 # MAGIC 
