@@ -126,7 +126,7 @@ dbutils.notebook.exit("stop") # Stop the notebook before the streaming cell, in 
 # MAGIC val states = Seq("CA", "TX", "NY", "WA")
 # MAGIC val randomState = udf(() => states(random.nextInt(states.length)))
 # MAGIC 
-# MAGIC // Function to start a streaming query with a stream of randomly generated load data and append to the parquet table
+# MAGIC // Function to start a streaming query with a stream of randomly generated data and append to the parquet table
 # MAGIC def generateAndAppendDataStream(tableFormat: String, tablePath: String): StreamingQuery = {
 # MAGIC   
 # MAGIC   val streamData = spark.readStream.format("rate").option("rowsPerSecond", 5).load()
@@ -175,7 +175,7 @@ dbutils.notebook.exit("stop") # Stop the notebook before the streaming cell, in 
 # MAGIC def random_state():
 # MAGIC   return str(random.choice(states))
 # MAGIC 
-# MAGIC # Function to start a streaming query with a stream of randomly generated load data and append to the parquet table
+# MAGIC # Function to start a streaming query with a stream of randomly generated data and append to the parquet table
 # MAGIC def generate_and_append_data_stream(table_format, table_path):
 # MAGIC 
 # MAGIC   stream_data = (spark.readStream.format("rate").option("rowsPerSecond", 5).load() 
@@ -708,13 +708,25 @@ spark.sql("SELECT COUNT(*) FROM loans_delta_pre_delete").show()
 
 # COMMAND ----------
 
-# Rollback
-spark.read.format("delta") \
-  .option("versionAsOf", previousVersion) \
-  .load(delta_path) \
-  .write.format("delta") \
-  .mode("overwrite") \
-  .save(delta_path)
+# MAGIC %scala
+# MAGIC # Rollback
+# MAGIC spark.read.format("delta")
+# MAGIC   .option("versionAsOf", previousVersion) 
+# MAGIC   .load(delta_path) 
+# MAGIC   .write.format("delta") 
+# MAGIC   .mode("overwrite") 
+# MAGIC   .save(delta_path)
+
+# COMMAND ----------
+
+# MAGIC %python
+# MAGIC # Rollback
+# MAGIC spark.read.format("delta") \
+# MAGIC   .option("versionAsOf", previousVersion) \
+# MAGIC   .load(delta_path) \
+# MAGIC   .write.format("delta") \
+# MAGIC   .mode("overwrite") \
+# MAGIC   .save(delta_path)
 
 # COMMAND ----------
 
@@ -864,7 +876,7 @@ spark.sql("select * from loans_delta_small order by loan_id").show()
 # MAGIC val loanUpdates = Seq(
 # MAGIC   (1, 1000, 361.19, "WA"), // duplicate information    
 # MAGIC   (2, 1000, 1000.0, "TX"), // existing loan's paid_amnt updated, loan paid in full
-# MAGIC   (3, 2000, 0.0, "CA"))    // new loan's details
+# MAGIC   (3, 2000, 0.0, "CA"))    // new loan details
 # MAGIC   .toDF("loan_id", "funded_amnt", "paid_amnt", "addr_state")
 # MAGIC 
 # MAGIC loanUpdates.show()
@@ -876,7 +888,7 @@ spark.sql("select * from loans_delta_small order by loan_id").show()
 # MAGIC items = [
 # MAGIC   (1, 1000, 361.19, 'WA'), # duplicate information  
 # MAGIC   (2, 1000, 1000.0, 'TX'), # existing loan's paid_amnt updated, loan paid in full
-# MAGIC   (3, 2000, 0.0, 'CA')     # new loan's details
+# MAGIC   (3, 2000, 0.0, 'CA')     # new loan details
 # MAGIC ]
 # MAGIC 
 # MAGIC loan_updates = spark.createDataFrame(items, cols)
