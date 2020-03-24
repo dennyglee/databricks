@@ -70,35 +70,40 @@ comm_use_subset.printSchema()
 
 # COMMAND ----------
 
+# MAGIC %md #### Extract Authors
+# MAGIC To determine the source geographic location of these papers, let's extract the author metadata to create the `paperAuthorLocation` temporary view.
+
+# COMMAND ----------
+
 # MAGIC %sql
 # MAGIC select paper_id, metadata.title, metadata.authors, metadata from comm_use_subset limit 10
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC select paper_id, metadata.title, explode(metadata.authors) from comm_use_subset limit 10
+paperAuthorLocation = spark.sql("""
+select paper_id, 
+       title,  
+       authors.affiliation.location.addrLine as addrLine, 
+       authors.affiliation.location.country as country, 
+       authors.affiliation.location.postBox as postBox,
+       authors.affiliation.location.postCode as postCode,
+       authors.affiliation.location.region as region,
+       authors.affiliation.location.settlement as settlement
+  from (
+    select a.paper_id, a.metadata.title as title, b.authors
+      from comm_use_subset a
+        left join (
+            select paper_id, explode(metadata.authors) as authors from comm_use_subset 
+            ) b
+           on b.paper_id = a.paper_id  
+  ) x
+""")
+paperAuthorLocation.createOrReplaceTempView("paperAuthorLocation")
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC select paper_id, min(country) as AuthorCountry
-# MAGIC   from (
-# MAGIC select paper_id, authors.affiliation.location.country as country
-# MAGIC   from (
-# MAGIC     select paper_id, metadata.title as title, explode(metadata.authors) as authors from comm_use_subset 
-# MAGIC   ) a
-# MAGIC  where authors.affiliation.location.country is not null  
-# MAGIC ) x
-# MAGIC group by paper_id
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select authors.affiliation.location.country as country, count(distinct paper_id) as papers 
-# MAGIC   from (
-# MAGIC     select paper_id, metadata.title as title, explode(metadata.authors) as authors from comm_use_subset 
-# MAGIC   ) a
-# MAGIC group by country
+# MAGIC %md #### Author Country Data Issues
+# MAGIC There are some issues with the `authors.affiliation.location.country` information such as a value of `USA,USA,USA,USA`
 
 # COMMAND ----------
 
@@ -111,330 +116,198 @@ comm_use_subset.printSchema()
 
 # COMMAND ----------
 
-# papers by Author Country
-papersByCountry = spark.sql("""
-select paper_id, min(country) as AuthorCountry
+# MAGIC %md ### Clean Up the Data
+# MAGIC Let's work on cleaning up the author country data
+
+# COMMAND ----------
+
+# MAGIC %md #### Review paperAuthorLocation
+# MAGIC A quick review of the `paperAuthorLocation` temporary view.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from paperAuthorLocation limit 200
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select count(1), count(distinct paper_id) as papers from paperAuthorLocation
+
+# COMMAND ----------
+
+# MAGIC %md #### Extract country data
+# MAGIC Extract country data (`paperCountries`) from the `paperAuthorLocation` temporary view.
+
+# COMMAND ----------
+
+paperCountries = spark.sql("""select distinct country from paperAuthorLocation""")
+paperCountries.createOrReplaceTempView("paperCountries")
+
+# COMMAND ----------
+
+# MAGIC %md #### Use pycountry
+# MAGIC Use `pycountry` to extract the alpha_3 code for each country
+
+# COMMAND ----------
+
+# import
+import pycountry
+
+# Look up alpha_3 country code (using pycountry)
+def get_alpha_3(country):
+    try_alpha_3 = -1
+    try:
+        try_alpha_3 = pycountry.countries.search_fuzzy(country)[0].alpha_3
+    except:
+        print("Unknown Country")
+    return try_alpha_3
+
+# Register UDF
+spark.udf.register("get_alpha_3", get_alpha_3)
+
+# COMMAND ----------
+
+# from pyspark.sql.functions import pandas_udf, PandasUDFType
+
+# # Use pandas_udf to define a Pandas UDF
+# @pandas_udf('double', PandasUDFType.SCALAR)
+# # Input/output are both a pandas.Series of doubles
+
+# def pandas_plus_one(v):
+#     return v + 1
+
+# df.withColumn('v2', pandas_plus_one(df.v))
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select country, get_alpha_3(country) as alpha_3 from paperCountries
+
+# COMMAND ----------
+
+# MAGIC %md #### Steps to clean up country data
+
+# COMMAND ----------
+
+# Step 1: Extract alpha_3 for easily identifiable countries
+paperCountries_s01 = spark.sql("""select country, get_alpha_3(country) as alpha_3 from paperCountries""")
+paperCountries_s01.cache()
+paperCountries_s01.createOrReplaceTempView("paperCountries_s01")
+
+# COMMAND ----------
+
+# Step 2: Extract alpha_3 for splittable identifiable countries (e.g. "USA, USA, USA", "Sweden, Norway", etc)
+paperCountries_s02 = spark.sql("""
+select country, splitCountry as country_cleansed, get_alpha_3(ltrim(rtrim(splitCountry))) as alpha_3
   from (
-select paper_id, authors.affiliation.location.country as country
-  from (
-    select paper_id, metadata.title as title, explode(metadata.authors) as authors from comm_use_subset 
-  ) a
- where authors.affiliation.location.country is not null  
-) x
-group by paper_id
+select country, explode(split(regexp_replace(country, "[^a-zA-Z, ]+", ""), ',')) as splitCountry
+  from paperCountries_s01
+ where alpha_3 = '-1'
+ ) x
 """)
-
-# Create temp view
-papersByCountry.createOrReplaceTempView("papersByCountry")
+paperCountries_s02.cache()
+paperCountries_s02.createOrReplaceTempView("paperCountries_s02")
 
 # COMMAND ----------
 
-mapCountryCleansed = spark.read.options(header='true', inferSchema='true', sep='|').csv("tmp/dennylee/mappings/mapCountryCleansed")
-mapCountryCleansed.createOrReplaceTempView("mapCountryCleansed")
+# Step 3: Extract yet to be identified countries (per steps 1 and 2) 
+paperCountries_s03 = spark.sql("""select country, ltrim(rtrim(country_cleansed)) as country_cleansed, get_alpha_3(country_cleansed) from paperCountries_s02 where alpha_3 = -1""")
+paperCountries_s03.cache()
+paperCountries_s03.createOrReplaceTempView("paperCountries_s03")
+
+# COMMAND ----------
+
+# Step 4: Identify country by settlement
+paperCountries_s04 = spark.sql("""
+select distinct m.country_cleansed, f.settlement, get_alpha_3(f.settlement) as alpha_3
+  from paperAuthorLocation f
+    inner join paperCountries_s03 m
+      on m.country = f.country
+""")
+paperCountries_s04.cache()
+paperCountries_s04.createOrReplaceTempView("paperCountries_s04")
+
+# COMMAND ----------
+
+ # Step 5: Build new mapping
+map_country_cleansed = spark.sql("""select distinct country_cleansed, alpha_3 from paperCountries_s04 where alpha_3 <> '-1'""")
+map_country_cleansed.cache()
+map_country_cleansed.createOrReplaceTempView("map_country_cleansed")
+
+# COMMAND ----------
+
+# Step 6: Update paperCountries_s03 using the mapping from step 5
+paperCountries_s06 = spark.sql("""
+select f.country, f.country_cleansed, m.alpha_3
+  from paperCountries_s03 f
+    left join map_country_cleansed m
+      on m.country_cleansed = f.country_cleansed
+ where m.alpha_3 is not null      
+""")
+paperCountries_s06.cache()
+paperCountries_s06.createOrReplaceTempView("paperCountries_s06")
+
+# COMMAND ----------
+
+# MAGIC %md #### Build up map_country 
+# MAGIC Build up map_country based on the previous pipeline processing.
+
+# COMMAND ----------
+
+map_country = spark.sql("""
+select country, alpha_3 from paperCountries_s01 where alpha_3 <> '-1'
+union all
+select country, alpha_3 from paperCountries_s02 where alpha_3 <> '-1'
+union all
+select country, alpha_3 from paperCountries_s06
+""")
+map_country.cache()
+map_country.createOrReplaceTempView("map_country")
+
+# COMMAND ----------
+
+# MAGIC %md #### Build paperCountryMapped
+# MAGIC Put this all together to map the paper and alpha_3 geo location
+
+# COMMAND ----------
+
+paperCountryMapped = spark.sql("""
+select p.paper_id, p.title, p.addrLine, p.country, p.postBox, p.postCode, p.region, p.settlement, m.alpha_3
+ from paperAuthorLocation p
+   left outer join map_country m
+     on m.country = p.country
+""")
+paperCountryMapped.cache()
+paperCountryMapped.createOrReplaceTempView("paperCountryMapped")
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select m.Alpha3, count(distinct p.paper_id) as papers
-# MAGIC   from papersByCountry p
-# MAGIC     left join mapCountryCleansed m
-# MAGIC       on m.AuthorCountry = p.AuthorCountry
-# MAGIC  group by m.Alpha3
+# MAGIC select * from paperCountryMapped limit 100
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
-
+# MAGIC %md #### paperCountryMapped Descriptive Statistics
 
 # COMMAND ----------
 
-# MAGIC %md #### Reference
-# MAGIC Refrence code for mapping "country" values 
+(ep_no, edp_no) = spark.sql("select count(1), count(distinct paper_id) from paperCountryMapped where country is null and settlement is null").collect()[0]
+(ep_geo, edp_geo) = spark.sql("select count(1), count(distinct paper_id) from paperCountryMapped where country is not null or settlement is not null").collect()[0]
+(ep_a3, edp_a3) = spark.sql("select count(1), count(distinct paper_id) from paperCountryMapped where alpha_3 is not null").collect()[0]
+print("Distinct Papers with No Geographic Information: %s" % edp_no)
+print("Distinct Papers with Some Geographic Information: %s" % edp_geo)
+print("Distinct Papers with Identified Alpha_3 codes: %s" % edp_a3)
 
 # COMMAND ----------
 
-mapCountry = spark.sql("""select distinct AuthorCountry from papersByCountry""")
-mapCountry.createOrReplaceTempView("mapCountry")
-mapCountry.count()
+# MAGIC %md ### Visualize Paper Country Mapping
+# MAGIC Map out the author country for each paper; note multiple authors per paper so there will be some double counting.
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from mapCountry order by AuthorCountry
-
-# COMMAND ----------
-
-dbutils.fs.put("/tmp/dennylee/mappings/mapCountryCleansed", """
-AuthorCountry|Alpha2|Alpha3
-12 Korea|KR|KOR
-2 Republic of Korea|KR|KOR
-Algeria|DZ|DZA
-Argentina|AR|ARG
-Argentina, China|AR|ARG
-Australia|AU|AUS
-Australia, Australia|AU|AUS
-Australia, Canada|AU|AUS
-Austria|AT|AUT
-Bahrain|BH|BHR
-Bangladesh|BD|BGD
-Belgium|BE|BEL
-Belgium;, France|BE|BEL
-Benin|BJ|BEN
-Botswana|BW|BWA
-Brasil|BR|BRA
-Brazil|BR|BRA
-Brazil (, Brazil|BR|BRA
-Brazil Correspondence|BR|BRA
-Brazil., Brazil|BR|BRA
-Bulgaria|BGR
-CYPRUS|CY|CYP
-California|US|USA
-Cambodia|KH|KHM
-Cambodia, France|KH|KHM
-Cameroon|CM|CMR
-Cameroun|CM|CMR
-Canada|CA|CAN
-Canada, France|CA|CAN
-Canada, United States of America|CA|CAN
-Canada;|CA|CAN
-Centre, France|FR|FRA
-Chile|CL|CHL
-China|CN|CHN
-China SAR|HK|HKG
-China, 6 Ministry|CN|CHN
-China, China|CN|CHN
-China, People's Republic of China|CN|CHN
-China-Japan|CN|CHN
-China-Japan, China|CN|CHN
-China., China|CN|CHN
-Colombia|CO|COL
-Croatia|HR|HRV
-Croatia, Croatia|HR|HRV
-Cuba|CU|CUB
-Cyprus|CY|CYP
-Czech Republic|CZ|CZE
-Democratic Republic of Congo|CD|COD
-Democratic Republic of the Congo|CD|COD
-Denmark|DK|DNK
-Denmark, Sweden|DK|DNK
-Denmark;, The Netherlands|DK|DNK
-Ecuador|EC|ECU
-Egypt|EG|EGY
-Egypt, Republic of Congo|EG|EGY
-England, UK|GB|GBR
-England, United Kingdom|GB|GBR
-España. Correspondence|ES|ESP
-Estonia|EE|EST
-Ethiopia|ET|ETH
-FRANCE|FR|FRA
-Finland|FI|FIN
-France|FR|FRA
-France Correspondence|FR|FRA
-France;, France|FR|FRA
-Gabon|GA|GAB
-Gdansk Poland|PL|POL
-Georgia|GE|GEO
-Georgia, USA|US|USA
-Germany|DE|DEU
-Germany, Canada|DE|DEU
-Germany, Germany|DE|DEU
-Germany, Germany, Germany|DE|DEU
-Germany, SPAIN|DE|DEU
-Germany, Sweden|DE|DEU
-Germany;, USA., USA|DE|DEU
-Ghana|GH|GHA
-Greece|GR|GRC
-Grenada|GD|GRD
-Guatemala|GT|GTM
-Guinea|GN|GIN
-Haiti|HT|HTI
-Hungary|HU|HUN
-India|IN|IND
-India, Pakistan;, Pakistan|IN|IND
-India. *Correspondence|IN|IND
-India;, Norway|IN|IND
-Indonesia|ID|IDN
-Iran|IR|IRN
-Iran, Malaysia|IR|IRN
-Iraq|IQ|IRQ
-Ireland|IE|IRL
-Israel|IL|ISR
-Israel, USA|IL|ISR
-Italy|IT|ITA
-Italy, United States, Germany, United States|IT|ITA
-Jamaica|JM|JAM
-Jamaica (|JM|JAM
-Japan|JP|JPN
-Japan Racing Association, Japan|JP|JPN
-Japan, Japan|JP|JPN
-Jordan|JO|JOR
-Jordan, Jordan|JO|JOR
-Kazakhstan|KZ|KAZ
-Kelantan|MY|MYS
-Kenya|KE|KEN
-Kenya, Kenya|KE|KEN
-Kingdom of Bahrain|BH|BHR
-Korea|KR|KOR
-Korea Correspondence, UK|KR|KOR
-Korea, Korea, South Korea|KR|KOR
-Kuwait|KW|KWT
-Kyrgyzstan|KG|KGZ
-Lebanon|LB|LBN
-Liberia|LR|LBR
-Lin-, Taiwan|TW|TWN
-Lithuania|LT|LTU
-Luxembourg|LU|LUX
-Madagascar|MG|MDG
-Malawi|MW|MWI
-Malaysia|MY|MYS
-Mali|ML|MLI
-Mexico|MX|MEX
-Mongolia|MN|MNG
-Morocco|MA|MAR
-México|MX|MEX
-Nepal|NP|NPL
-Nepal;|NP|NPL
-Netherlands|NL|NLD
-New Jersey|US|USA
-New Zealand|NZ|NZL
-Nicaragua|NI|NIC
-Niger|NE|NER
-Nigeria|NG|NGA
-Norway|NO|NOR
-Oman|OM|OMN
-P. R. China|CN|CHN
-P. R. China, P. R. China|CN|CHN
-P.R China|CN|CHN
-P.R. China|CN|CHN
-P.R. China, P.R. China|CN|CHN
-P.R. China., P.R. China|CN|CHN
-P.R. of China|CN|CHN
-P.R.China|CN|CHN
-PR China|CN|CHN
-PRC|CN|CHN
-Pakistan|PK|PAK
-Palestine|PS|PSE
-Pennsylvania|US|USA
-Pennsylvania;|US|USA
-People's Republic of China|CN|CHN
-People9s Republic of China|CN|CHN
-Peru|PE|PER
-Philippines|PH|PHL
-Poland|PL|POL
-Portugal|PT|PRT
-Qatar|QA|QAT
-ROC|CN|CHN
-Republic of Ireland|IE|GBR
-Republic of Kazakhstan|KZ|KAZ
-Republic of Korea|KR|KOR
-Republic of Panama|PA|PAN
-Republic of Singapore|SG|SGP
-Republic of The Gambia|GM|GMB
-Reunion Island|FR|FRA
-Reunion Island, France|FR|FRA
-Romania|RO|ROU
-Russia|RU|RUS
-Saudi Arabia|SA|SAU
-Saudi Arabia, Saudi Arabia|SA|SAU
-Scotland, UK|GB|GBR
-Scotland, United Kingdom|GB|GBR
-Sellman BR||
-Senegal|SN|SEN
-Serbia|RS|SRB
-Singapore|SG|SGP
-Singapore ¤|SG|SGP
-Singapore, Singapore|SG|SGP
-Singapore, Singapore, Singapore|SG|SGP
-Singapore. Correspondence|SG|SGP
-Slovak Republic|SK|SVK
-Slovakia|SK|SVK
-Slovenia|SI|SVN
-South||
-South Africa|ZA|ZAF
-South China, China|CN|CHN
-South Korea|KR|KOR
-South Korea. Correspondence|KR|KOR
-Spain|ES|ESP
-Spain, France|ES|ESP
-Spain, UNITED STATES|ES|ESP
-Spain, United States of America|ES|ESP
-Sri Lanka|LK|LKA
-Stratoxon LLC USA, USA, USA|US|USA
-Sudan|SD|SDN
-Sweden|SE|SWE
-Sweden, Germany|SE|SWE
-Sweden, Netherlands|SE|SWE
-Sweden, Norway|SE|SWE
-Switzerland|CH|CHE
-Switzerland, Cameroon|CH|CHE
-Switzerland., UK|CH|CHE
-Taiwan|TW|TWN
-Taiwan (R.O.C.|TW|TWN
-Taiwan (ROC|TW|TWN
-Taiwan R.O.C|TW|TWN
-Taiwan ROC|TW|TWN
-Taiwan ROC Republic of China|TW|TWN
-Taiwan(|TW|TWN
-Taiwan, ROC|TW|TWN
-Taiwan, Republic of China|TW|TWN
-Tanzania|TZ|TZA
-Thailand|TH|THA
-Thailand (DL|TH|THA
-The Gambia|GM|GMB
-The Netherlands|NL|NLD
-The Netherlands ARTICLE HISTORY|NL|NLD
-The Netherlands., The Netherlands|NL|NLD
-The P.R. China|CN|CHN
-Tunisia|TN|TUN
-Turkey|TR|TUR
-U.S.A|US|USA
-UAE|AE|ARE
-UK|GB|GBR
-UK ARTICLE HISTORY|GB|GBR
-UK ARTICLE HISTORY, UK|GB|GBR
-UK, UK|GB|GBR
-UK., Germany|GB|GBR
-UK;, Germany|GB|GBR
-UNITED STATES|US|USA
-US, USA|US|USA
-USA|US|USA
-USA, China|US|USA
-USA, USA|US|USA
-USA, USA, USA, USA|US|USA
-USA.|US|USA
-USA., Vietnam|US|USA
-USA;, Germany|US|USA
-Uganda|UG|UGA
-Ukraine|UA|UKR
-United Arab Emirates|AE|ARE
-United Arab, United Arab Emirates|AE|ARE
-United Kingdom|GB|GBR
-United Kingdom, United Kingdom|GB|GBR
-United Kingdom, United States of America|GB|GBR
-United Stated of America}|US|USA
-United States|US|USA
-United States of America|US|USA
-United States of America, Germany|US|USA
-United States of America, United States|US|USA
-United States of America, United States of America|US|USA
-United States, Germany|US|USA
-United States, USA|US|USA
-United States, United States|US|USA
-United States, United States of America|US|USA
-United States, United States, Italy, Greece|US|USA
-United-Kingdom|GB|GBR
-Uruguay|UY|URY
-UsA|US|USA
-Vietnam|VN|VNM
-Virginia, USA|US|USA
-australia, australia|AU|AUS
-israel|IL|ISR
-italy|IT|ITA
-the Netherlands|NL|NLD
-""", True)
-
-# COMMAND ----------
-
+# MAGIC select alpha_3, count(distinct paper_id) 
+# MAGIC   from paperCountryMapped 
+# MAGIC  where alpha_3 is not null
+# MAGIC  group by alpha_3
