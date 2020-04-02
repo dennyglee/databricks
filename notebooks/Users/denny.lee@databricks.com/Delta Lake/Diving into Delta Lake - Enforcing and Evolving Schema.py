@@ -71,7 +71,7 @@ from pyspark.sql.functions import *
 
 parquet_path = "/sais_eu_19_demo/loans_parquet"
 
-# Delete a new parquet table with the parquet file
+# Delete parquet table if it exsists
 if os.path.exists("/dbfs" + parquet_path):
   print("Deleting path " + parquet_path)
   shutil.rmtree("/dbfs" + parquet_path)
@@ -210,7 +210,7 @@ stop_all_streams()
 # COMMAND ----------
 
 # MAGIC %md ## ![Delta Lake Tiny Logo](https://pages.databricks.com/rs/094-YMS-629/images/delta-lake-tiny-logo.png) Batch + stream processing and schema enforcement with Delta Lake
-# MAGIC Let's understand Delta Lake solves these particular problems (among many others). We will start by creating a Delta table from the original data.
+# MAGIC Let's understand how Delta Lake solves these particular problems (among many others). We will start by creating a Delta table from the original data.
 
 # COMMAND ----------
 
@@ -285,15 +285,6 @@ display(j0.select("commitInfo").where("commitInfo is not null"))
 
 # Add Information
 display(j0.select("add").where("add is not null"))
-
-# COMMAND ----------
-
-# MAGIC %md #### Protocol
-
-# COMMAND ----------
-
-# Protocol Information
-display(j0.select("protocol").where("protocol is not null"))
 
 # COMMAND ----------
 
@@ -394,6 +385,16 @@ stop_all_streams()
 
 # COMMAND ----------
 
+from delta.tables import *
+delta_path = "/sais_eu_19_demo/loans_delta"
+deltaTable = DeltaTable.forPath(spark, delta_path)
+
+# remember the last commit before schema change
+c_before = deltaTable.history(1).select("version").collect()[0][0]
+print(c_before)
+
+# COMMAND ----------
+
 # MAGIC %md ###  ![Delta Lake Tiny Logo](https://pages.databricks.com/rs/094-YMS-629/images/delta-lake-tiny-logo.png) Schema Evolution
 
 # COMMAND ----------
@@ -422,7 +423,7 @@ def generate_and_append_data_stream_mergeSchema(table_format, table_path):
     .withColumn("loan_id", 10000 + col("value")) \
     .withColumn("funded_amnt", (rand() * 5000 + 5000).cast("integer")) \
     .withColumn("paid_amnt", col("funded_amnt") - (rand() * 2000)) \
-    .withColumn("addr_state", random_state()) \
+    .withColumn("addr_state", random_state())
 
   query = stream_data.writeStream \
     .format(table_format) \
@@ -475,15 +476,21 @@ display(deltaTable.history())
 # COMMAND ----------
 
 # MAGIC %md ### Review JSON for Schema Changes
-# MAGIC * `jz`: New data with new schema
-# MAGIC * `jy`: Transaction for schema change
-# MAGIC * `jx`: Data with old schema
+# MAGIC * `commit_before`: Data with old schema
+# MAGIC * `commit_change`: Transaction for schema change
+# MAGIC * `commit_after`: New data with new schema
 
 # COMMAND ----------
 
-jz = spark.read.json("/sais_eu_19_demo/loans_delta/_delta_log/00000000000000000006.json")
-jy = spark.read.json("/sais_eu_19_demo/loans_delta/_delta_log/00000000000000000005.json")
-jx = spark.read.json("/sais_eu_19_demo/loans_delta/_delta_log/00000000000000000004.json")
+c_change = c_before + 1
+c_after = c_change + 1
+path_template = "/sais_eu_19_demo/loans_delta/_delta_log/0000000000000000{commit:04d}.json"
+
+# COMMAND ----------
+
+commit_before = spark.read.json(path_template.format(commit = c_before))
+commit_change = spark.read.json(path_template.format(commit = c_change))
+commit_after = spark.read.json(path_template.format(commit = c_after))
 
 # COMMAND ----------
 
@@ -491,18 +498,13 @@ jx = spark.read.json("/sais_eu_19_demo/loans_delta/_delta_log/000000000000000000
 
 # COMMAND ----------
 
-# New data with new schema
-display(jz.select("add").where("add is not null"))
+# Data with old schema
+display(commit_before.select("add").where("add is not null"))
 
 # COMMAND ----------
 
 # Transaction for schema change
-display(jy.select("add").where("add is not null"))
-
-# COMMAND ----------
-
-# Data with old schema
-display(jx.select("add").where("add is not null"))
+display(commit_change.select("add").where("add is not null"))
 
 # COMMAND ----------
 
@@ -511,20 +513,37 @@ display(jx.select("add").where("add is not null"))
 # COMMAND ----------
 
 # Metadata Information
-display(jy.select("metadata").where("metadata is not null"))
+display(commit_change.select("metadata").where("metadata is not null"))
 
 # COMMAND ----------
 
-# MAGIC %md ** With Time Travel, you can query previous versions **
+# New data with new schema
+display(commit_after.select("add").where("add is not null"))
+
+# COMMAND ----------
+
+# MAGIC %md #### Time Travel - Querying historic versions
 
 # COMMAND ----------
 
 currentVersion = deltaTable.history(1).select("version").collect()[0][0]
 
-v01 = spark.read.format("delta").option("versionAsOf", 1).load(delta_path).count()
-v04 = spark.read.format("delta").option("versionAsOf", 4).load(delta_path).count()
-vno = spark.read.format("delta").option("versionAsOf", currentVersion).load(delta_path).count()
-print("loans_delta table counts:\n Initial [%s] \n Version 11 [%s] \n Current Version [%s]" % (v01, v04, vno))
+v_init = spark.read.format("delta").option("versionAsOf", 1).load(delta_path).count()
+v_change = spark.read.format("delta").option("versionAsOf", c_before).load(delta_path).count()
+v_now = spark.read.format("delta").option("versionAsOf", currentVersion).load(delta_path).count()
+print("loans_delta table counts:\n Initial [%s]\n At Schema Change [%s]\n Current Version [%s]" % (v_init, v_change, v_now))
+
+# COMMAND ----------
+
+display(spark.read.format("delta").option("versionAsOf", c_before).load(delta_path))
+
+# COMMAND ----------
+
+display(spark.read.format("delta").option("versionAsOf", c_change).load(delta_path))
+
+# COMMAND ----------
+
+display(spark.read.format("delta").option("versionAsOf", c_after).load(delta_path).where("timestamp is not null"))
 
 # COMMAND ----------
 
