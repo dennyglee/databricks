@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %md # Koalas: Simplifying PySpark with Pandas
+# MAGIC %md # Koalas - Simplifying PySpark with Pandas
 # MAGIC 
 # MAGIC This notebook provides a sample example of scaling your machine learning using [Koalas: Pandas API on Apache Spark](https://github.com/databricks/koalas).
 # MAGIC 
