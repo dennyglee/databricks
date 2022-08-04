@@ -1,4 +1,4 @@
-// Databricks notebook source exported at Thu, 29 Sep 2016 21:40:43 UTC
+// Databricks notebook source
 // MAGIC %md ## Connecting to Azure DocumentDB
 // MAGIC Databricks Community Edition Notebook (on AWS) connecting to Azure DocumentDB instance 
 // MAGIC 
@@ -45,6 +45,10 @@ display(dataFrame)
 // COMMAND ----------
 
 // MAGIC %sql SELECT State, count(1) FROM AirportCodes WHERE Country = 'USA' and State <> 'null' GROUP BY State 
+
+// COMMAND ----------
+
+// MAGIC %sql SELECT State, count(*) FROM AirportCodes WHERE Country = 'USA' and State <> 'null' GROUP BY State 
 
 // COMMAND ----------
 
